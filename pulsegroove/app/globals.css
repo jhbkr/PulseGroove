@@ -122,3 +122,94 @@
     color: var(--accent, #fff);
   }
 }
+
+@keyframes pulse-bpm {
+  0%   { transform: scale(1); }
+  12%  { transform: scale(1.13); }
+  24%  { transform: scale(0.97); }
+  32%  { transform: scale(1.08); }
+  40%  { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
+.pulse-bpm {
+  will-change: transform;
+}
+
+@layer utilities {
+  @keyframes pulse-bg {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.92;
+      transform: scale(1.03);
+    }
+  }
+  .animate-pulse-bg {
+    animation: pulse-bg 3s ease-in-out infinite;
+  }
+  @keyframes vinyl-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .animate-vinyl-spin {
+    animation: vinyl-spin 3s linear infinite;
+    will-change: transform;
+  }
+  @keyframes gradient-move {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+  .animate-gradient-move {
+    animation: gradient-move 12s ease-in-out infinite;
+    background-size: 200% 200%;
+  }
+  @keyframes vinyl-spin-pulse {
+    0% {
+      transform: rotate(0deg) scale(1);
+    }
+    10% {
+      transform: rotate(36deg) scale(1.08);
+    }
+    20% {
+      transform: rotate(72deg) scale(1);
+    }
+    30% {
+      transform: rotate(108deg) scale(1.06);
+    }
+    40% {
+      transform: rotate(144deg) scale(1);
+    }
+    50% {
+      transform: rotate(180deg) scale(1.08);
+    }
+    60% {
+      transform: rotate(216deg) scale(1);
+    }
+    70% {
+      transform: rotate(252deg) scale(1.06);
+    }
+    80% {
+      transform: rotate(288deg) scale(1);
+    }
+    90% {
+      transform: rotate(324deg) scale(1.08);
+    }
+    100% {
+      transform: rotate(360deg) scale(1);
+    }
+  }
+  .animate-vinyl-spin-pulse {
+    animation: vinyl-spin-pulse 3s linear infinite;
+    will-change: transform;
+  }
+}

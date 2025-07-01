@@ -1,113 +1,115 @@
-// Spotify API endpoints et helpers pour OAuth PKCE
-
-const SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize';
-const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
-const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
+import { useEffect, useState } from "react";
+export const SPOTIFY_AUTH_URL  = "https://accounts.spotify.com/authorize";
+export const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
+export const SPOTIFY_API_URL   = "https://api.spotify.com/v1";
 
 export const SPOTIFY_SCOPES = [
-  'user-read-playback-state',
-  'user-read-currently-playing',
-];
+  "user-read-playback-state",
+  "user-read-currently-playing",
+] as const;
 
-export function getSpotifyAuthUrl({
-  clientId,
-  redirectUri,
-  codeChallenge,
-}: {
+
+export function getSpotifyAuthUrl(params: {
   clientId: string;
   redirectUri: string;
   codeChallenge: string;
-}): string {
-  const params = new URLSearchParams({
-    client_id: clientId,
-    response_type: 'code',
-    redirect_uri: redirectUri,
-    code_challenge_method: 'S256',
-    code_challenge: codeChallenge,
-    scope: SPOTIFY_SCOPES.join(' '),
+}) {
+  const q = new URLSearchParams({
+    client_id:         params.clientId,
+    response_type:     "code",
+    redirect_uri:      params.redirectUri,
+    code_challenge:    params.codeChallenge,
+    code_challenge_method: "S256",
+    scope: SPOTIFY_SCOPES.join(" "),
   });
-  return `${SPOTIFY_AUTH_URL}?${params.toString()}`;
+  return `${SPOTIFY_AUTH_URL}?${q.toString()}`;
 }
 
-// Échange le code contre un access_token (PKCE)
-export async function fetchSpotifyToken({
-  clientId,
-  code,
-  redirectUri,
-  codeVerifier,
-}: {
+export async function fetchSpotifyToken(params: {
   clientId: string;
   code: string;
   redirectUri: string;
   codeVerifier: string;
-}): Promise<any> {
-  const params = new URLSearchParams({
-    client_id: clientId,
-    grant_type: 'authorization_code',
-    code,
-    redirect_uri: redirectUri,
-    code_verifier: codeVerifier,
+}) {
+  const body = new URLSearchParams({
+    client_id: params.clientId,
+    grant_type: "authorization_code",
+    code: params.code,
+    redirect_uri: params.redirectUri,
+    code_verifier: params.codeVerifier,
   });
-  const res = await fetch(SPOTIFY_TOKEN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params.toString(),
+  const r = await fetch(SPOTIFY_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
   });
-  if (!res.ok) throw new Error('Token exchange failed');
-  return res.json();
+  if (!r.ok) throw new Error("Token exchange failed");
+  return r.json() as Promise<{ access_token: string; expires_in: number }>;
 }
 
-// Fetch la piste en cours
-export async function fetchCurrentlyPlaying(accessToken: string): Promise<any> {
-  const res = await fetch(`${SPOTIFY_API_URL}/me/player/currently-playing`, {
+/* ------------------------------------------------------------------ */
+/*  SPOTIFY PLAYER                                                    */
+/* ------------------------------------------------------------------ */
+export interface CurrentlyPlaying {
+  item?: any;
+  currently_playing_type?: string;
+}
+
+export async function fetchCurrentlyPlaying(
+  accessToken: string,
+): Promise<CurrentlyPlaying | null> {
+  const r = await fetch(`${SPOTIFY_API_URL}/me/player/currently-playing`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  if (!res.ok) return null;
-  return res.json();
+  if (!r.ok) return null;
+  return r.json();
 }
 
-// Fetch les audio-features d'une track
-export async function fetchAudioFeatures(accessToken: string, trackId: string): Promise<any> {
-  const res = await fetch(`${SPOTIFY_API_URL}/audio-features/${trackId}`, {
+export async function fetchAudioFeatures(
+  accessToken: string,
+  trackId: string,
+) {
+  const r = await fetch(`${SPOTIFY_API_URL}/audio-features/${trackId}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  console.log('audio-features status', res.status); // DEBUG
-  if (!res.ok) return null;
-  return res.json();
+  if (!r.ok) return null;
+  return r.json();
 }
 
-import { useEffect, useState } from "react";
-
-export function useAudioFeatures(accessToken: string | null, trackId: string | null) {
+export function useAudioFeatures(
+  accessToken: string | null,
+  trackId: string | null,
+) {
   const [features, setFeatures] = useState<any>(null);
-
   useEffect(() => {
     if (!accessToken || !trackId) return;
     fetchAudioFeatures(accessToken, trackId).then(setFeatures);
   }, [accessToken, trackId]);
-
   return features;
 }
 
-// Hook pour récupérer le BPM Deezer à partir du nom et de l'artiste via le proxy Next.js
-export function useDeezerBPM(trackName: string | null, artistName: string | null) {
-  const [bpm, setBpm] = useState<number | null>(null);
+export function useTrackBPM(
+  trackName: string | null,
+  artistName: string | null,
+) {
+  const [data, setData] = useState<{ bpm: number | null; source: string | null }>(
+    { bpm: null, source: null },
+  );
 
   useEffect(() => {
     if (!trackName || !artistName) return;
 
-    async function fetchBPM() {
-      try {
-        const url = `/api/deezer-bpm?track=${encodeURIComponent(trackName || "")}&artist=${encodeURIComponent(artistName || "")}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        setBpm(data.bpm || null);
-      } catch (e) {
-        setBpm(null);
-      }
-    }
-    fetchBPM();
+    const url = `/api/deezer-bpm?track=${encodeURIComponent(
+      trackName,
+    )}&artist=${encodeURIComponent(artistName)}`;
+
+    fetch(url)
+      .then((r) => r.json())
+      .then((j) => setData(j))
+      .catch(() => setData({ bpm: null, source: null }));
   }, [trackName, artistName]);
 
-  return bpm;
+  return data;
 }
+
+export const useDeezerBPM = useTrackBPM;
