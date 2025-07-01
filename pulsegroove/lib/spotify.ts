@@ -71,6 +71,43 @@ export async function fetchAudioFeatures(accessToken: string, trackId: string): 
   const res = await fetch(`${SPOTIFY_API_URL}/audio-features/${trackId}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+  console.log('audio-features status', res.status); // DEBUG
   if (!res.ok) return null;
   return res.json();
-} 
+}
+
+import { useEffect, useState } from "react";
+
+export function useAudioFeatures(accessToken: string | null, trackId: string | null) {
+  const [features, setFeatures] = useState<any>(null);
+
+  useEffect(() => {
+    if (!accessToken || !trackId) return;
+    fetchAudioFeatures(accessToken, trackId).then(setFeatures);
+  }, [accessToken, trackId]);
+
+  return features;
+}
+
+// Hook pour récupérer le BPM Deezer à partir du nom et de l'artiste via le proxy Next.js
+export function useDeezerBPM(trackName: string | null, artistName: string | null) {
+  const [bpm, setBpm] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!trackName || !artistName) return;
+
+    async function fetchBPM() {
+      try {
+        const url = `/api/deezer-bpm?track=${encodeURIComponent(trackName || "")}&artist=${encodeURIComponent(artistName || "")}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        setBpm(data.bpm || null);
+      } catch (e) {
+        setBpm(null);
+      }
+    }
+    fetchBPM();
+  }, [trackName, artistName]);
+
+  return bpm;
+}

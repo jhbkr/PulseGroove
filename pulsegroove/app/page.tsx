@@ -1,12 +1,31 @@
-import Image from "next/image";
+"use client";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { generateCodeVerifier, generateCodeChallenge, saveCodeVerifier } from "@/lib/auth/pkce";
-import { getSpotifyAuthUrl } from "@/lib/spotify";
+import { getSpotifyAuthUrl, fetchCurrentlyPlaying, useDeezerBPM } from "@/lib/spotify";
+import { usePalette } from "@/lib/theme/usePalette";
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID!;
 const REDIRECT_URI = process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI!;
 
 export default function Home() {
+  const [track, setTrack] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  const palette = usePalette(track?.album.images[0]?.url);
+
+  const vibrant = palette?.Vibrant?.hex || "#18181b";
+  const muted = palette?.Muted?.hex || "#23232b";
+  const darkVibrant = palette?.DarkVibrant?.hex || "#18181b";
+  const lightVibrant = palette?.LightVibrant?.hex || "#fff";
+  const darkMuted = palette?.DarkMuted?.hex || "#18181b";
+  const lightMuted = palette?.LightMuted?.hex || "#e0e0e0";
+
+  const deezerBpm = useDeezerBPM(track?.name, track?.artists?.[0]?.name);
+
   async function handleLogin() {
     const verifier = generateCodeVerifier();
     saveCodeVerifier(verifier);
@@ -19,106 +38,108 @@ export default function Home() {
     window.location.href = url;
   }
 
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  function handleLogout() {
+    window.localStorage.removeItem("spotify_access_token");
+    setToken(null);
+    setTrack(null);
+  }
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-        <Button onClick={handleLogin}>
+  useEffect(() => {
+    const t = typeof window !== 'undefined' ? window.localStorage.getItem("spotify_access_token") : null;
+    setToken(t);
+    if (!t) return;
+
+    let interval: NodeJS.Timeout;
+
+    const fetchTrack = () => {
+      fetchCurrentlyPlaying(t)
+        .then((data) => {
+          if (data && data.item && data.currently_playing_type === "track") {
+            setTrack(data.item);
+          } else {
+            setTrack(null);
+          }
+        })
+        .catch(() => setError("Erreur lors de la récupération de la piste en cours."))
+        .finally(() => setLoading(false));
+    };
+
+    setLoading(true);
+    fetchTrack();
+    interval = setInterval(fetchTrack, 3000); // toutes les 3 secondes
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => setMounted(true), []);
+
+  return (
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-8 transition-colors duration-700"
+      style={{
+        background: mounted && track
+          ? `linear-gradient(135deg, ${vibrant} 0%, ${muted} 60%, ${darkVibrant} 100%)`
+          : "#18181b",
+      }}
+    >
+      <div className="text-lg font-bold mb-8 opacity-60 tracking-widest" style={{ color: lightMuted }}>
+        PulseGroove
+      </div>
+      {!token ? (
+        <Button className="w-60 py-4 text-lg font-semibold shadow-xl" onClick={handleLogin}>
           Se connecter à Spotify
         </Button>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+      ) : loading ? (
+        <p className="text-gray-200">Chargement de la piste en cours...</p>
+      ) : track ? (
+        <>
+          <img
+            src={track.album.images[0]?.url}
+            alt={track.name}
+            className="rounded-xl w-64 h-64 object-cover shadow-2xl mb-6"
+            style={{ border: `4px solid ${lightVibrant}` }}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <div className="text-3xl font-extrabold text-center mb-2" style={{ color: lightVibrant, textShadow: `0 2px 16px ${darkMuted}` }}>{track.name}</div>
+          <div className="text-lg text-center mb-4" style={{ color: lightMuted }}>{track.artists.map((a: any) => a.name).join(", ")}</div>
+          <div className="flex flex-col items-center gap-1 mb-4">
+            {deezerBpm ? (
+              <div className="text-md" style={{ color: vibrant }}>
+                <span className="font-semibold">BPM :</span> {Math.round(deezerBpm)} <span style={{fontSize:12,opacity:0.7}}>(Deezer)</span>
+              </div>
+            ) : (
+              <div className="text-md text-gray-300">Chargement BPM Deezer...</div>
+            )}
+          </div>
+          <Button variant="destructive" onClick={handleLogout} className="mt-2" style={{ background: darkVibrant, color: lightVibrant, border: `1px solid ${lightVibrant}` }}>
+            Se déconnecter
+          </Button>
+        </>
+      ) : (
+        <>
+          <p className="text-gray-400 mb-4">Aucune piste en cours de lecture.</p>
+          <Button variant="destructive" onClick={handleLogout} className="mt-2">Se déconnecter</Button>
+        </>
+      )}
+      {error && <p className="text-red-500 mt-4">{error}</p>}
+      {/* Debug UI (affiché seulement en dev et si connecté) */}
+      {process.env.NODE_ENV !== 'production' && token && track?.id && (
+        <div style={{
+          marginTop: 32,
+          background: '#222',
+          color: '#fff',
+          padding: 16,
+          borderRadius: 8,
+          maxWidth: 600,
+          wordBreak: 'break-all',
+          fontSize: 12,
+          opacity: 0.85,
+        }}>
+          <div><b>DEBUG</b></div>
+          <div><b>Token:</b> {token?.slice(0, 32)}... (len: {token?.length})</div>
+          <div><b>Track ID:</b> {track?.id || 'null'}</div>
+          <div><b>Erreur API:</b> {error || 'aucune'}</div>
+        </div>
+      )}
     </div>
   );
 }
