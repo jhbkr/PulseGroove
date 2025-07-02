@@ -1,4 +1,8 @@
 import { useEffect, useState } from "react";
+
+/* ------------------------------------------------------------------ */
+/*  CONSTANTES ET SCOPES                                              */
+/* ------------------------------------------------------------------ */
 export const SPOTIFY_AUTH_URL  = "https://accounts.spotify.com/authorize";
 export const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
 export const SPOTIFY_API_URL   = "https://api.spotify.com/v1";
@@ -8,7 +12,9 @@ export const SPOTIFY_SCOPES = [
   "user-read-currently-playing",
 ] as const;
 
-
+/* ------------------------------------------------------------------ */
+/*  OAUTH FLOW                                                        */
+/* ------------------------------------------------------------------ */
 export function getSpotifyAuthUrl(params: {
   clientId: string;
   redirectUri: string;
@@ -65,6 +71,9 @@ export async function fetchCurrentlyPlaying(
   return r.json();
 }
 
+/* ------------------------------------------------------------------ */
+/*  (Optionnel) AUDIO-FEATURES – encore utile si tu obtiens un quota  */
+/* ------------------------------------------------------------------ */
 export async function fetchAudioFeatures(
   accessToken: string,
   trackId: string,
@@ -88,6 +97,9 @@ export function useAudioFeatures(
   return features;
 }
 
+/* ------------------------------------------------------------------ */
+/*  BPM RESOLVE (Deezer → GetSongBPM → TheAudioDB)                    */
+/* ------------------------------------------------------------------ */
 export function useTrackBPM(
   trackName: string | null,
   artistName: string | null,
@@ -109,7 +121,8 @@ export function useTrackBPM(
       .catch(() => setData({ bpm: null, source: null }));
   }, [trackName, artistName]);
 
-  return data;
+  return data; // { bpm, source }
 }
 
+/* ----- ALIAS pour rétro-compatibilité avec ton ancien code --------- */
 export const useDeezerBPM = useTrackBPM;

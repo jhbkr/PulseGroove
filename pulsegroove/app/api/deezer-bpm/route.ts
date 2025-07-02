@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ bpm: dz.bpm, source: "deezer" }, { status: 200 });
       }
     }
-  } catch (_) {}
+  } catch (_) {/* swallow */}
 
   /* ---------- 2) GetSongBPM --------------------------------------------- */
   const gsbKey = process.env.GETSONGBPM_API_KEY;
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
           { status: 200 },
         );
       }
-    } catch (_) {}
+    } catch (_) {/* swallow */}
   }
 
   /* ---------- 3) TheAudioDB --------------------------------------------- */
@@ -58,7 +58,8 @@ export async function GET(req: NextRequest) {
         { status: 200 },
       );
     }
-  } catch (_) {}
+  } catch (_) {/* swallow */}
 
+  /* ---------- fallback --------------------------------------------------- */
   return NextResponse.json({ bpm: null, source: null }, { status: 404 });
 }

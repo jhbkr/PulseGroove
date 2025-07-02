@@ -6,7 +6,9 @@ interface WaveFlowProps {
 }
 
 const toHSL = (color: string) => {
+  // Si déjà en hsl, retourne tel quel, sinon convertit (simple fallback)
   if (color.startsWith('hsl')) return color;
+  // Hex to HSL conversion (simplifié)
   let r = 0, g = 0, b = 0;
   if (color.length === 7) {
     r = parseInt(color.slice(1, 3), 16);
@@ -63,9 +65,7 @@ export default function WaveFlow({ palette, tempo }: WaveFlowProps) {
       <div
         className="absolute inset-0 w-full h-full"
         style={{
-          background: `linear-gradient(120deg, ${hsl[0]}, ${hsl[1]}, ${hsl[2]||hsl[0]}, ${hsl[0]})`,
-          backgroundSize: "200% 200%",
-          backgroundPosition: "0% 50%",
+          background: `linear-gradient(120deg, ${hsl[0]}, ${hsl[1]}, ${hsl[2]||hsl[0]}, ${hsl[0]}) 0% 50% / 200% 200% no-repeat`,
           animation: `waveflow-bg1 ${Math.max(8, pulseDuration*2)}s ease-in-out infinite`,
           opacity: 0.85,
           filter: "blur(32px)",
@@ -75,9 +75,7 @@ export default function WaveFlow({ palette, tempo }: WaveFlowProps) {
       <div
         className="absolute inset-0 w-full h-full"
         style={{
-          background: `radial-gradient(circle at 70% 30%, ${hsl[1]} 0%, transparent 80%), linear-gradient(120deg, ${hsl[2]||hsl[0]}, ${hsl[0]}, ${hsl[1]})`,
-          backgroundSize: "180% 180%",
-          backgroundPosition: "100% 50%",
+          background: `radial-gradient(circle at 70% 30%, ${hsl[1]} 0%, transparent 80%) 100% 50% / 180% 180% no-repeat, linear-gradient(120deg, ${hsl[2]||hsl[0]}, ${hsl[0]}, ${hsl[1]}) 100% 50% / 180% 180% no-repeat`,
           animation: `waveflow-bg2 ${Math.max(12, pulseDuration*3)}s ease-in-out infinite`,
           opacity: 0.55,
           filter: "blur(48px)",
@@ -88,9 +86,7 @@ export default function WaveFlow({ palette, tempo }: WaveFlowProps) {
       <div
         className="absolute inset-0 w-full h-full"
         style={{
-          background: `radial-gradient(circle at 30% 80%, ${hsl[2]||hsl[0]} 0%, transparent 80%), linear-gradient(120deg, ${hsl[1]}, ${hsl[2]||hsl[0]}, ${hsl[0]})`,
-          backgroundSize: "220% 220%",
-          backgroundPosition: "50% 100%",
+          background: `radial-gradient(circle at 30% 80%, ${hsl[2]||hsl[0]} 0%, transparent 80%) 50% 100% / 220% 220% no-repeat, linear-gradient(120deg, ${hsl[1]}, ${hsl[2]||hsl[0]}, ${hsl[0]}) 50% 100% / 220% 220% no-repeat`,
           animation: `waveflow-bg3 ${Math.max(18, pulseDuration*4)}s ease-in-out infinite`,
           opacity: 0.35,
           filter: "blur(64px)",
